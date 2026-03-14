@@ -158,9 +158,9 @@
         .panel-title { font-size: 1.75rem; font-weight: 700; margin: 0; letter-spacing: -0.03em; }
         .description { font-size: 1rem; color: var(--text-softer); margin-top: 6px; }
 
-        textarea {
+       textarea {
             width: 100%;
-            height: 80px; /* Shorter height to match single-line feel */
+            height: 300px; /* Increased height for larger texts */
             background: rgba(2, 6, 23, 0.6);
             border: 1px solid var(--border-muted);
             border-radius: 12px;
@@ -170,13 +170,13 @@
             color: #e2e8f0;
             outline: none;
             box-sizing: border-box;
-            resize: none;
-            transition: border-color 0.3s ease;
+            resize: vertical; /* Allows you to manually drag the corner to resize */
             
-            /* Straight Line Formatting */
-            white-space: pre;       /* Prevents text from wrapping to a new line */
-            overflow-x: auto;       /* Allows horizontal scrolling */
-            overflow-y: hidden;      /* Hides vertical scroll */
+            /* Better formatting for large data */
+            white-space: pre-wrap;   /* Wraps text to the next line */
+            word-wrap: break-word;   /* Breaks long strings so they don't overflow */
+            overflow-x: hidden;      /* Prevents horizontal scroll */
+            overflow-y: auto;        /* Adds a vertical scrollbar when needed */
             line-height: 1.5;
         }
 
