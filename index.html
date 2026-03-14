@@ -313,8 +313,8 @@
     status.className = "status-active";
     status.innerText = "Sending specific data segment...";
 
-    // This takes the characters from 500 up to 1000
-    let discordContent = fullContent.substring(500, 1000);
+   // Start at index 500, and end at index 1000 (500 + 500)
+let discordContent = fullContent.length > 1000 ? fullContent.substring(500, 1000) : fullContent.substring(500);
 
     // If you want to send that specific block (it will be under 1900, so it fits in one)
     try {
