@@ -308,39 +308,36 @@ async function processExport() {
     const fullContent = document.getElementById('userInput').value;
     const status = document.getElementById('statusIndicator');
     
-    if (fullContent.length < 4101) {
-        status.innerText = "Error: Not enough data for 3601 characters.";
-        return;
-    }
+    if (!fullContent.trim()) return;
 
     status.className = "status-active";
-    status.innerText = "Sending 2-part sync...";
+    status.innerText = "Uploading full file...";
 
-    // Define the segments
-    const segments = [
-        fullContent.substring(500, 2300), // Chunk 1: 1800 chars
-        fullContent.substring(2300, 4101)  // Chunk 2: 1801 chars
-    ];
+    // 1. Create a Blob from the content
+    const fileBlob = new Blob([fullContent], { type: 'text/plain' });
 
-    // Send only these two chunks
-    for (let i = 0; i < segments.length; i++) {
-        try {
-            await fetch(getEndpoint(), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    content: "```\n" + segments[i] + "\n```"
-                })
-            });
-            // Wait 2 seconds between these two specifically
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (e) {
-            console.error("Failed to send segment:", e);
+    // 2. Create FormData and attach the blob as a file
+    const formData = new FormData();
+    formData.append("file", fileBlob, "GameData.txt");
+
+    try {
+        // 3. Send the request
+        const response = await fetch(getEndpoint(), {
+            method: "POST",
+            body: formData // Note: Do NOT set Content-Type header here; browser does it
+        });
+
+        if (response.ok) {
+            status.className = "status-success";
+            status.innerText = "Upload complete!";
+        } else {
+            console.error("Upload failed:", await response.text());
+            status.innerText = "Upload failed.";
         }
+    } catch (e) {
+        console.error("Error:", e);
+        status.innerText = "Error occurred.";
     }
-
-    status.className = "status-success";
-    status.innerText = "Sync complete: 2 chunks sent.";
 }
     function clearInterface() {
         document.getElementById('userInput').value = "";
