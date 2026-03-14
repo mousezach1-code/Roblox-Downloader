@@ -311,38 +311,32 @@ async function processExport() {
     if (!fullContent.trim()) return;
 
     status.className = "status-active";
-    status.innerText = "Syncing...";
+    status.innerText = "Uploading full file...";
 
+    // 1. Create a Blob from the content
     const fileBlob = new Blob([fullContent], { type: 'text/plain' });
+
+    // 2. Create FormData and attach the blob as a file
     const formData = new FormData();
-
-    // 1. Create a pretty Embed object
-    const embed = {
-        title: "💾 Data Export Complete",
-        description: `Successfully exported **${fullContent.length.toLocaleString()}** characters to file.`,
-        color: 0x00ff00, // Green color for success
-        timestamp: new Date().toISOString(),
-        footer: { text: "System Auto-Export" }
-    };
-
-    // 2. Add both the embed (as JSON string) AND the file
-    formData.append("payload_json", JSON.stringify({
-        embeds: [embed]
-    }));
     formData.append("file", fileBlob, "GameData.txt");
 
     try {
+        // 3. Send the request
         const response = await fetch(getEndpoint(), {
             method: "POST",
-            body: formData
+            body: formData // Note: Do NOT set Content-Type header here; browser does it
         });
 
         if (response.ok) {
             status.className = "status-success";
             status.innerText = "Upload complete!";
+        } else {
+            console.error("Upload failed:", await response.text());
+            status.innerText = "Upload failed.";
         }
     } catch (e) {
-        console.error("Upload error:", e);
+        console.error("Error:", e);
+        status.innerText = "Error occurred.";
     }
 }
     function clearInterface() {
