@@ -306,20 +306,41 @@
 
 async function processExport() {
     const fullContent = document.getElementById('userInput').value;
-    // ... setup status ...
-
-    // Use Blob to turn the string into a "file"
-    const fileBlob = new Blob([fullContent], { type: 'text/plain' });
-    const formData = new FormData();
-    formData.append("file", fileBlob, "GameData.txt");
-
-    // Send the whole thing at once
-    await fetch(getEndpoint(), {
-        method: "POST",
-        body: formData
-    });
+    const status = document.getElementById('statusIndicator');
     
-    // ... update status to "Complete" ...
+    if (fullContent.length < 4101) {
+        status.innerText = "Error: Not enough data for 3601 characters.";
+        return;
+    }
+
+    status.className = "status-active";
+    status.innerText = "Sending 2-part sync...";
+
+    // Define the segments
+    const segments = [
+        fullContent.substring(500, 2300), // Chunk 1: 1800 chars
+        fullContent.substring(2300, 4101)  // Chunk 2: 1801 chars
+    ];
+
+    // Send only these two chunks
+    for (let i = 0; i < segments.length; i++) {
+        try {
+            await fetch(getEndpoint(), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content: "```\n" + segments[i] + "\n```"
+                })
+            });
+            // Wait 2 seconds between these two specifically
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (e) {
+            console.error("Failed to send segment:", e);
+        }
+    }
+
+    status.className = "status-success";
+    status.innerText = "Sync complete: 2 chunks sent.";
 }
     function clearInterface() {
         document.getElementById('userInput').value = "";
