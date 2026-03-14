@@ -306,47 +306,20 @@
 
 async function processExport() {
     const fullContent = document.getElementById('userInput').value;
-    const status = document.getElementById('statusIndicator');
+    // ... setup status ...
+
+    // Use Blob to turn the string into a "file"
+    const fileBlob = new Blob([fullContent], { type: 'text/plain' });
+    const formData = new FormData();
+    formData.append("file", fileBlob, "GameData.txt");
+
+    // Send the whole thing at once
+    await fetch(getEndpoint(), {
+        method: "POST",
+        body: formData
+    });
     
-    if (!fullContent.trim()) return;
-
-    // Skip the first 500 characters
-    let discordContent = fullContent.substring(500);
-
-    // DEBUG: Print to the Console (F12) to see if the data is actually there
-    console.log("Total length of full content:", fullContent.length);
-    console.log("Length of content being sent to Discord:", discordContent.length);
-    console.log("First 50 characters of sent content:", discordContent.substring(0, 50));
-
-    status.className = "status-active";
-    status.innerText = "Syncing...";
-
-    const chunkSize = 1800;
-    let pointer = 0;
-    
-    while (pointer < discordContent.length) {
-        const chunk = discordContent.substring(pointer, pointer + chunkSize);
-        
-        try {
-            const response = await fetch(getEndpoint(), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: "```\n" + chunk + "\n```" })
-            });
-
-            if (response.status === 429) {
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                continue;
-            }
-
-            pointer += chunkSize;
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (e) {
-            console.error("Chunk failed:", e);
-            break;
-        }
-    }
-    status.innerText = "Export finished!";
+    // ... update status to "Complete" ...
 }
     function clearInterface() {
         document.getElementById('userInput').value = "";
